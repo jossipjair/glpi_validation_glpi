@@ -298,7 +298,7 @@ console.info('Adición de Validación Campo TiempoReal');
 console.info('DOMContentLoaded usado para carga dinámica de DOM');
 console.info('Búsqueda de boton "add" en la posicion [2] debido a que hay varios botones llamados "add"');
 console.info('Búsqueda de formulario "itil-form" donde se encuentra el campo "tiemporealhrsfield" que se genera desde plugin');
-console.info('https://github.com/jossipjair');
+console.info('https://github.com/jossipjair/glpi_validation_ticket');
 
 document.addEventListener('DOMContentLoaded', function() {
     // Función para validar el campo en el formulario 'itil-form'
