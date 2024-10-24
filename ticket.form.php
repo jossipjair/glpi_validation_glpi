@@ -314,19 +314,87 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         return false;
     }
+    
+    function validateCategoryFormField() {
+        const itilForm = document.getElementById('itil-form');
+        if (itilForm) {
+            const inputField = itilForm.querySelector('select[name="itilcategories_id"]');
+            if (inputField) {
+                return inputField.value.trim() !== '0';
+            } else {
+                return false;
+            }
+        }
+        return false;
+    }
+    
+    function validateLocationFormField() {
+        const itilForm = document.getElementById('itil-form');
+        if (itilForm) {
+            const inputField = itilForm.querySelector('select[name="locations_id"]');
+           
+            if (inputField) {
+                return inputField.value.trim() !== '0';
+            } else {
+                return false;
+            }
+        }
+        return false;
+    }
 
     // Función para manejar la validación y agregar el manejador de eventos
     function setupValidation() {
 
         const boton = document.getElementsByName("add")[2];//document.querySelector('button[type="submit"][name="add"]');
         
-        boton.addEventListener('click', function(){
+         // Evitar agregar múltiples veces el eventListener
+        if (!boton.hasAttribute('data-listener-added')) {
+      
+        
+          boton.addEventListener('click', function(){
+        
+        
+            let isValid = true;
+            
+            // Validar el campo Tiempo Real
             if (!validateItilFormField()) {
+                alert('⚠️ El campo "Tiempo Real" no puede estar vacío. ⚠️ ');
+                isValid = false;
+            }
+
+            // Validar el campo Categoría
+            if (!validateCategoryFormField()) {
+                alert('⚠️ El campo "Categoría" no puede estar vacío. ⚠️ ');
+                isValid = false;
+            }
+            
+            // Validar el campo Ubicación
+            if (!validateLocationFormField()) {
+                alert('⚠️ El campo "Ubicación" no puede estar vacío. ⚠️');
+                isValid = false;
+            }
+
+            // Si hay errores, prevenir el envío del formulario y mostrar el mensaje
+            if (!isValid) {
+
+                event.preventDefault();
+            }
+        
+            /*if (!validateItilFormField()) {
                     alert('⚠️ El campo "Tiempo Real" no puede estar vacío. ⚠️');
                     event.preventDefault(); // Previene el envío del formulario 'asset_form'
                 }
-        })
-
+                
+            if (!validateCategoryFormField()) {
+                    alert('⚠️ El campo "Category" no puede estar vacío. ⚠️');
+                    event.preventDefault(); // Previene el envío del formulario 'asset_form'
+                }*/
+                
+        });
+        
+           // Marcar que el listener ya ha sido añadido
+            boton.setAttribute('data-listener-added', 'true');
+        }
     }
 
     // Configura el observer para observar cambios en el cuerpo del documento
