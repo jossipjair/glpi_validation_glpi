@@ -41,145 +41,116 @@ use Glpi\Event;
 
 include('../inc/includes.php');
 
-if (empty($_GET["id"])) {
-    $_GET["id"] = '';
-}
-if (!isset($_GET["withtemplate"])) {
-    $_GET["withtemplate"] = '';
-}
+Session::checkCentralAccess();
 
-Session::checkLoginUser();
+if (!isset($_GET["id"])) {
+    $_GET["id"] = "";
+}
+if (!isset($_GET["projects_id"])) {
+    $_GET["projects_id"] = "";
+}
+if (!isset($_GET["projecttasks_id"])) {
+    $_GET["projecttasks_id"] = "";
+}
+$task = new ProjectTask();
 
-$project = new Project();
 if (isset($_POST["add"])) {
-    $project->check(-1, CREATE, $_POST);
+    $task->check(-1, CREATE, $_POST);
+    $task->add($_POST);
 
-    $newID = $project->add($_POST);
     Event::log(
-        $newID,
-        "project",
+        $task->fields['projects_id'],
+        'project',
         4,
         "maintain",
-        //TRANS: %1$s is the user login, %2$s is the name of the item
-        sprintf(__('%1$s adds the item %2$s'), $_SESSION["glpiname"], $_POST["name"])
+        //TRANS: %s is the user login
+        sprintf(__('%s adds a task'), $_SESSION["glpiname"])
     );
     if ($_SESSION['glpibackcreated']) {
-        Html::redirect($project->getLinkURL());
+        Html::redirect($task->getLinkURL());
     } else {
-        Html::back();
+        Html::redirect(ProjectTask::getFormURL() . "?projects_id=" . $task->fields['projects_id']);
     }
-} else if (isset($_POST["delete"])) {
-    $project->check($_POST["id"], DELETE);
-
-    $project->delete($_POST);
-    Event::log(
-        $_POST["id"],
-        "project",
-        4,
-        "maintain",
-        //TRANS: %s is the user login
-        sprintf(__('%s deletes an item'), $_SESSION["glpiname"])
-    );
-    $project->redirectToList();
-} else if (isset($_POST["restore"])) {
-    $project->check($_POST["id"], DELETE);
-
-    $project->restore($_POST);
-    Event::log(
-        $_POST["id"],
-        "project",
-        4,
-        "maintain",
-        //TRANS: %s is the user login
-        sprintf(__('%s restores an item'), $_SESSION["glpiname"])
-    );
-    $project->redirectToList();
 } else if (isset($_POST["purge"])) {
-    $project->check($_POST["id"], PURGE);
-    $project->delete($_POST, 1);
+    $task->check($_POST['id'], PURGE);
+    $task->delete($_POST, 1);
 
     Event::log(
-        $_POST["id"],
-        "project",
+        $task->fields['projects_id'],
+        'project',
         4,
         "maintain",
         //TRANS: %s is the user login
-        sprintf(__('%s purges an item'), $_SESSION["glpiname"])
+        sprintf(__('%s purges a task'), $_SESSION["glpiname"])
     );
-    $project->redirectToList();
+    Html::redirect(Project::getFormURLWithID($task->fields['projects_id']));
 } else if (isset($_POST["update"])) {
-    $project->check($_POST["id"], UPDATE);
+    $task->check($_POST["id"], UPDATE);
+    $task->update($_POST);
 
-    $project->update($_POST);
     Event::log(
-        $_POST["id"],
-        "project",
+        $task->fields['projects_id'],
+        'project',
         4,
         "maintain",
         //TRANS: %s is the user login
-        sprintf(__('%s updates an item'), $_SESSION["glpiname"])
+        sprintf(__('%s updates a task'), $_SESSION["glpiname"])
     );
-
     Html::back();
 } else if (isset($_GET['_in_modal'])) {
-    Html::popHeader(Budget::getTypeName(1), $_SERVER['PHP_SELF'], true);
-    $project->showForm($_GET["id"], ['withtemplate' => $_GET["withtemplate"]]);
+    Html::popHeader(ProjectTask::getTypeName(1), $_SERVER['PHP_SELF'], true);
+    $task->showForm($_GET["id"], ['withtemplate' => $_GET["withtemplate"]]);
     Html::popFooter();
 } else {
-    if (isset($_GET['showglobalkanban']) && $_GET['showglobalkanban']) {
-        Html::header(Project::getTypeName(Session::getPluralNumber()), $_SERVER['PHP_SELF'], "tools", "project");
-        $project->showKanban(0);
-        Html::footer();
-    } else {
-        $menus = ["tools", "project"];
-        Project::displayFullPageForItem($_GET["id"], $menus, [
-            'withtemplate' => $_GET["withtemplate"],
-            'formoptions'  => "data-track-changes=true"
-        ]);
-    }
+    $menus = ["tools", "project"];
+    ProjectTask::displayFullPageForItem($_GET['id'], $menus, $_GET);
 }
+
 ?>
 
 <script>
-    console.info('Adición de Validación Campos en Proyecto');
+    console.info('Adición de Validación Campos en Tareas de Proyecto');
     console.info('DOMContentLoaded usado para carga dinámica de DOM');
     console.info('Búsqueda de formulario "asset_form" donde se encuentran los campos del form dinámico');
     console.info('https://github.com/jossipjair/glpi_validation_glpi');
 
     document.addEventListener('DOMContentLoaded', function() {
+
+        function validateNameFormField() {
+            const asset_form = document.querySelector('form[name="asset_form"]');
+            if (asset_form) {
+                const inputField = asset_form.querySelector('input[name="name"]');
+                if (inputField) {
+                    return inputField.value.trim() !== '';
+                } else {
+                    return false;
+                }
+            }
+            return false;
+        }
+
+        function validateDescriptionFormField() {
+            const asset_form = document.querySelector('form[name="asset_form"]');
+            if (asset_form) {
+                const inputField = document.getElementById('tinymce');
+
+                console.log('Campo Descripción', inputField.value.trim());
+
+                if (inputField) {
+                    return inputField.value.trim() !== '';
+                } else {
+                    return false;
+                }
+            }
+            return false;
+        }
+
+
         function validateStatusFormField() {
             const asset_form = document.querySelector('form[name="asset_form"]');
          
             if (asset_form) {
                 const inputField = asset_form.querySelector('select[name="projectstates_id"]');
-                if(inputField ){
-                    return inputField.value > 0;
-                }else{
-                    return false;
-                }
-            }
-            return false;
-        }
-
-        function validateGroupsFormField() {
-            const asset_form = document.querySelector('form[name="asset_form"]');
-         
-            if (asset_form) {
-                const inputField = asset_form.querySelector('select[name="groups_id"]');
-                if(inputField ){
-                    return inputField.value > 0;
-                }else{
-                    return false;
-                }
-            }
-            return false;
-        }
-
-        function validateUsersFormField() {
-            const asset_form = document.querySelector('form[name="asset_form"]');
-         
-            if (asset_form) {
-                const inputField = asset_form.querySelector('select[name="users_id"]');
                 if(inputField ){
                     return inputField.value > 0;
                 }else{
@@ -202,18 +173,7 @@ if (isset($_POST["add"])) {
             return false;
         }
 
-        function validateNameFormField() {
-            const asset_form = document.querySelector('form[name="asset_form"]');
-            if (asset_form) {
-                const inputField = asset_form.querySelector('input[name="name"]');
-                if (inputField) {
-                    return inputField.value.trim() !== '';
-                } else {
-                    return false;
-                }
-            }
-            return false;
-        }
+
 
         function validatePlanEndDateFormField() {
             const asset_form = document.querySelector('form[name="asset_form"]');
@@ -228,30 +188,12 @@ if (isset($_POST["add"])) {
             return false;
         }
 
-        function validateDescriptionFormField() {
-            const asset_form = document.querySelector('form[name="asset_form"]');
-            if (asset_form) {
-                const inputField = asset_form.querySelector('textarea[name="content"]');
-
-                console.log('Campo Descripción', inputField.value.trim());
-
-                if (inputField) {
-                    return inputField.value.trim() !== '';
-                } else {
-                    return false;
-                }
-            }
-            return false;
-        }
-
         function setupValidation(){
 
             const boton = document.querySelector('button[type="submit"][name="add"]');
           
             if(boton != null){
-
-           
-            if (!boton.hasAttribute('data-listener-added')) {
+                if (!boton.hasAttribute('data-listener-added')) {
                 boton.addEventListener('click', function(event){
 
                 let isValid = true;
@@ -266,16 +208,6 @@ if (isset($_POST["add"])) {
                     isValid = false;
                 }
 
-                if(!validateGroupsFormField()){
-                    alert('⚠️️ El campo "Grupo" no puede estar vacío. ⚠️ ');
-                    isValid = false;
-                }
-
-                if(!validateUsersFormField()){
-                    alert('⚠️️ El campo "Usuario" no puede estar vacío. ⚠️ ');
-                    isValid = false;
-                }
-
                 if(!validatePlanStartDateFormField()){
                     alert('⚠️️ El campo "Fecha Inicio Planificada" no puede estar vacío. ⚠️ ');
                     isValid = false;
@@ -286,17 +218,18 @@ if (isset($_POST["add"])) {
                     isValid = false;
                 }
 
-                if(!validateDescriptionFormField()){
+                
+                /*if(!validateDescriptionFormField()){
                     alert('⚠️️ El campo "Descripción" no puede estar vacío. ⚠️ ');
                     isValid = false;
-                }
+                }*/
 
+              
             // Si hay errores, prevenir el envío del formulario y mostrar el mensaje
             if (!isValid) {
 
                 event.preventDefault();
             }
-
                 //console.log('Valida Estado', validateStatusFormField());
                 //console.log('Valida Grupo', validateGroupsFormField());
                 //console.log('Valida Usuario', validateUsersFormField());
@@ -308,8 +241,10 @@ if (isset($_POST["add"])) {
             });
                 boton.setAttribute('data-listener-added', 'true');
             }
-       
             }
+            
+       
+
         }
 
     
